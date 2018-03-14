@@ -22,7 +22,6 @@ class AccountInfo:
 	def loadfromfile(self, filename):
 		with open(filename, "r") as f:
 			j = json.load(f)
-			print(repr(j))
 			self.hs_client_api_url = j['hs_client_api_url']
 			self.mxid = j['mxid']
 			self.access_token = j['access_token']
@@ -86,16 +85,22 @@ class MXClient:
 		if t == self.account.T_PASSWORD:
 			self.sdkclient = matrix_client.client.MatrixClient(self.account.hs_client_api_url)
 			token = self.sdkclient.login_with_password(self.account.mxid, self.account.password)
-			print("got token after logging in with password!")
 			self.account.access_token = token
 			self.account.mxid = self.sdkclient.user_id
 			self.account.savetofile(self.accountfilename)
+		if t == self.account.T_TOKEN:
+			self.sdkclient = matrix_client.client.MatrixClient(
+				self.account.hs_client_api_url,
+				token=self.account.access_token,
+				user_id=self.account.mxid)
+		else:
+			raise CFException("MXClient.login(): Cannot login: 'account' is (partially) uninitialized")
 
 	def _ensure_account(self):
 		account = self.account
 		if account is None:
 			if self.accountfilename is None:
-				raise CFException("MXClient.login(): neither accountfilename not account given")
+				raise CFException("MXClient.login(): neither 'accountfilename' nor 'account' given")
 			account = AccountInfo()
 			try:
 				account.loadfromfile(self.accountfilename)
