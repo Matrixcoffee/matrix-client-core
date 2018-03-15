@@ -5,6 +5,8 @@ import re
 import itertools
 import sys
 import time
+import io
+import traceback
 
 # external deps
 import matrix_client.client
@@ -206,11 +208,17 @@ class MXClient:
 		return ret
 
 	def on_exception(self, e):
-		print("Exception caught. Hanging in there.")
-		print("Last event received:")
-		print(repr(self.last_event))
-		print("Stack trace:")
-		sys.excepthook(type(e), e, e.__traceback__)
+		print("Exception caught:", traceback.format_exception_only(type(e), e)[-1].strip())
+		print("Type /debug to show more info.")
+		moreinfo = io.StringIO()
+		print("Last event received before exception:", file=moreinfo)
+		print(repr(self.last_event), file=moreinfo)
+		print("Stack trace:", file=moreinfo)
+
+		traceback.print_exception(type(e), e, e.__traceback__, file=moreinfo)
+		self.debug_info = moreinfo.getvalue()
+		moreinfo.close()
+
 		delay = self._exc_delay()
 		print("Waiting {0} seconds before trying again.".format(delay))
 		time.sleep(delay)
@@ -224,6 +232,11 @@ class MXClient:
 		m = getattr(self, 'on_exception', None)
 		if callable(m): self.sdkclient.start_listener_thread(exception_handler=m)
 		else: self.sdkclient.start_listener_thread()
+
+	def repl_debug(self, txt):
+		""" Show more information about the last error that happened """
+		print(getattr(self, 'debug_info', "No errors.\n"), end='')
+		return True
 
 	def repl_me(self, txt):
 		""" Send an action/emote """
