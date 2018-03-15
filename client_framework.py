@@ -124,6 +124,16 @@ class MXClient:
 		""" Leave """
 		return False
 
+	def repl_help(self, txt):
+		""" Show this help text """
+		for mname in dir(self):
+			if not mname.startswith('repl_'): continue
+			cmd = mname[5:]
+			m = getattr(self, mname)
+			print("/{0}:".format(cmd), getattr(m, '__doc__', ""))
+
+		return True
+
 	def repl(self):
 		# Read Eval Print Loop
 
@@ -147,7 +157,7 @@ class MXClient:
 					continue
 
 			if not self.foreground_room:
-				print("Cannot send message: You have not selected any room.")
+				print("Cannot send message: You have not selected any room. Try /help.")
 				continue
 
 			send_as_notice = getattr(self, 'is_bot', False)
