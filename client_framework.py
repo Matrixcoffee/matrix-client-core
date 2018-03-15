@@ -5,8 +5,10 @@ import getpass
 # external deps
 import matrix_client.client
 
+
 class CFException(Exception):
 	pass
+
 
 class AccountInfo:
 	T_UNDEF = 0
@@ -73,23 +75,58 @@ class AccountInfo:
 		return bool(self.login_type())
 
 
+class NoSyncMatrixClient(matrix_client.client.MatrixClient):
+	# A subclass of MatrixClient that inhibits syncing until we allow it.
+
+	# This class exists because we want to do some modifications to the
+	# object (fixup) before _sync() is called for the first time.
+
+	def _sync(self, *args, **kwargs):
+		self.sync_attempted = True
+		self.sync_args = args
+		self.sync_kwargs = kwargs
+		if getattr(self, 'sync_enabled', False):
+			matrix_client.client.MatrixClient._sync(self, *args, **kwargs)
+
+	def enable_sync(self):
+		self.sync_enabled = True
+
+	def finish_fixup(self):
+		# This basically enables syncing, and calls the real _sync if
+		# and only if it would have been called by the constructor.
+
+		self.enable_sync()
+		if getattr(self, 'sync_attempted', False):
+			matrix_client.client.MatrixClient._sync(self, *self.sync_args, **self.sync_kwargs)
+
+
 class MXClient:
-	def __init__(self, accountfilename=None, account=None):
+	def __init__(self, accountfilename=None, account=None, sync_filter=None):
 		self.accountfilename = accountfilename
 		self.account = account
 		self.sdkclient = None
+		self.sync_filter = sync_filter
+
+	def _make_sdkclient(self, *args, **kwargs):
+		if not self.sync_filter:
+			return matrix_client.client.MatrixClient(*args, **kwargs)
+
+		client = NoSyncMatrixClient(*args, **kwargs)
+		client.sync_filter = self.sync_filter
+		client.finish_fixup()
+		return client
 
 	def login(self):
 		self._ensure_account()
 		t = self.account.login_type()
 		if t == self.account.T_PASSWORD:
-			self.sdkclient = matrix_client.client.MatrixClient(self.account.hs_client_api_url)
+			self.sdkclient = self._make_sdkclient(self.account.hs_client_api_url)
 			token = self.sdkclient.login_with_password(self.account.mxid, self.account.password)
 			self.account.access_token = token
 			self.account.mxid = self.sdkclient.user_id
 			self.account.savetofile(self.accountfilename)
 		if t == self.account.T_TOKEN:
-			self.sdkclient = matrix_client.client.MatrixClient(
+			self.sdkclient = self._make_sdkclient(
 				self.account.hs_client_api_url,
 				token=self.account.access_token,
 				user_id=self.account.mxid)
