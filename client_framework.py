@@ -278,11 +278,13 @@ class MXClient:
 
 	def repl_help(self, txt):
 		""" Show this help text """
-		for mname in dir(self):
-			if not mname.startswith('repl_'): continue
+		cmds = tuple(filter(lambda x: x.startswith('repl_'), dir(self)))
+		maxlen = max(map(lambda x: len(x), cmds))
+		fmt = "/{{:<{}}}".format(maxlen - 4)
+		for mname in cmds:
 			cmd = mname[5:]
 			m = getattr(self, mname)
-			print("/{0}:".format(cmd), getattr(m, '__doc__', ""))
+			print(fmt.format(cmd + ":"), getattr(m, '__doc__', "").strip())
 
 		return True
 
