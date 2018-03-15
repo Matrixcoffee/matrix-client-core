@@ -105,14 +105,6 @@ class RoomList:
 				elif item != r:
 					self.roomsbyprefix[prefix] = [item, r]
 
-		print("RoomList built:")
-		print("RoomList.roomsbyid:")
-		print(repr(self.roomsbyid))
-		print("RoomList.roomsbyalias:")
-		print(repr(self.roomsbyalias))
-		print("RoomList.roomsbyprefix:")
-		print(repr(self.roomsbyprefix))
-		print("-" * 79)
 
 	def get_room(self, id_or_alias_or_prefix):
 		# Find a room object by ID or alias, and return it
@@ -233,6 +225,12 @@ class MXClient:
 		if callable(m): self.sdkclient.start_listener_thread(exception_handler=m)
 		else: self.sdkclient.start_listener_thread()
 
+	def repl_list(self, txt):
+		""" List the rooms you're a member of """
+
+		print(" ".join(map(self.rooms.get_room_handle, self.rooms.roomsbyid.keys())))
+		return True
+
 	def repl_open(self, txt):
 		""" Open a room you're already a member of """
 		try:
@@ -253,7 +251,7 @@ class MXClient:
 		return True
 
 	def repl_join(self, txt):
-		""" Join a room you're not already in """
+		""" Join a room you're not already a member of """
 		try:
 			cmd, roomid = txt.split(None, 1)
 		except ValueError:
