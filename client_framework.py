@@ -10,6 +10,7 @@ import traceback
 
 # external deps
 import matrix_client.client
+import requests
 
 
 class CFException(Exception):
@@ -180,6 +181,8 @@ class MXClient:
 		self.account = account
 		self.sdkclient = None
 		self.sync_filter = sync_filter
+		self.initial_sync_timeout_seconds = 600
+		self.sync_timeout_seconds = 100
 
 	def _make_sdkclient(self, *args, **kwargs):
 		if not self.sync_filter:
@@ -232,6 +235,8 @@ class MXClient:
 		m = getattr(self, 'on_exception', None)
 		if callable(m): self.sdkclient.start_listener_thread(exception_handler=m)
 		else: self.sdkclient.start_listener_thread()
+		# Only supported by urllib-requests-adapter. NOOP otherwise.
+		requests.GLOBAL_TIMEOUT_SECONDS = self.sync_timeout_seconds
 
 	def repl_debug(self, txt):
 		""" Show more information about the last error that happened """
@@ -341,6 +346,9 @@ class MXClient:
 				self.foreground_room.send_text(txt)
 
 	def login(self):
+		# Only supported by urllib-requests-adapter. NOOP otherwise.
+		requests.GLOBAL_TIMEOUT_SECONDS = self.initial_sync_timeout_seconds
+
 		self._ensure_account()
 		t = self.account.login_type()
 		if t == self.account.T_PASSWORD:
