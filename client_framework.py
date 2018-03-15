@@ -194,9 +194,20 @@ class MXClient:
 		client.finish_fixup()
 		return client
 
+	def on_global_timeline_event(self, event):
+		roomid = event['room_id']
+		roomhandle = self.rooms.get_room_handle(roomid)
+		roomprefix = "[{0}]".format(roomhandle)
+		sender = event['sender']
+		print(roomprefix, repr(event))
+
 	def hook(self):
 		# Connect all the listeners, start threads etc.
-		pass
+		m = getattr(self, 'on_global_timeline_event', None)
+		if callable(m): self.sdkclient.add_listener(m)
+		m = getattr(self, 'on_exception', None)
+		if callable(m): self.sdkclient.start_listener_thread(exception_handler=m)
+		else: self.sdkclient.start_listener_thread()
 
 	def repl_open(self, txt):
 		""" Open a room you're already a member of """
