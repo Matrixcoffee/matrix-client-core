@@ -1,5 +1,5 @@
 # UnRedactBot
-UnRedactBot is a Matrix bot that listens for redaction events, and re-publishes the redacted content
+UnRedactBot is a [Matrix](https://matrix.org) bot that listens for redaction events, and re-publishes the redacted content
 
 ## Why does it exist?
 This is mainly a toy, but it might come in handy if you really believe people
@@ -24,6 +24,9 @@ Running it:
 $ cd UnRedactBot
 $ /bin/sh unredactbot.sh
 ```
+
+UnRedactBot does not know how to register an account, so you will need to
+create it by other means. [Riot.im](https://riot.im/app), for example.
 
 Happy hacking!
 
