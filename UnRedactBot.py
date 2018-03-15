@@ -27,9 +27,12 @@ class UnRedactBot(client_framework.MXClient):
 			}
 		}'''
 
+		self.is_bot = True
 		self.login()
 		rooms = self.sdkclient.get_rooms()
 		print("Rooms:", repr(rooms))
+		self.hook()
+		self.repl()
 
 if __name__ == '__main__':
 	bot = UnRedactBot('account.json')

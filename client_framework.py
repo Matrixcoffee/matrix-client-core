@@ -116,6 +116,50 @@ class MXClient:
 		client.finish_fixup()
 		return client
 
+	def hook(self):
+		# Connect all the listeners, start threads etc.
+		pass
+
+	def repl_quit(self, txt):
+		""" Leave """
+		return False
+
+	def repl(self):
+		# Read Eval Print Loop
+
+		# A simple console client loop that can be used as a basis for a client
+		# or as a bot manhole.
+
+		self.foreground_room = None
+
+		while True:
+			txt = input()
+			if txt.startswith('/'):
+				if txt.startswith('//'):
+					txt = txt[1:]
+				else:
+					cmd = txt.split(None, 1)[0].lstrip('/')
+					m = getattr(self, 'repl_' + cmd, None)
+					if callable(m):
+						if not m(txt): break
+					else:
+						print("Unrecognized command:", cmd)
+					continue
+
+			if not self.foreground_room:
+				print("Cannot send message: You have not selected any room.")
+				continue
+
+			send_as_notice = getattr(self, 'is_bot', False)
+			if txt.startswith(' '):
+				txt = txt[1:]
+				send_as_notice = not send_as_notice
+
+			if send_as_notice:
+				self.foreground_room.send_notice(txt)
+			else:
+				self.foreground_room.send_text(txt)
+
 	def login(self):
 		self._ensure_account()
 		t = self.account.login_type()
