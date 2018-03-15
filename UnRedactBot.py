@@ -10,6 +10,15 @@ class UnRedactBot(client_framework.MXClient):
 	def on_room_message(self, event):
 		self.message_store[event['event_id']] = event
 		print("Message with ID {0} stored.".format(event['event_id']))
+		self._send_read_receipt(event)
+
+	def _send_read_receipt(self, event):
+		path = "/rooms/{roomId}/receipt/{receiptType}/{eventId}".format(
+			roomId = event['room_id'],
+			receiptType = 'm.read',
+			eventId = event['event_id'])
+
+		return self.sdkclient.api._send("POST", path)
 
 	def on_redact(self, event):
 		roomid = event['room_id']
