@@ -59,5 +59,7 @@ class UnRedactBot(client_framework.MXClient):
 		self.repl()
 
 if __name__ == '__main__':
+	import logging
+	logging.basicConfig(level=logging.CRITICAL)
 	bot = UnRedactBot('account.json')
 	bot.run()
