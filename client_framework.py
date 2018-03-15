@@ -225,6 +225,15 @@ class MXClient:
 		if callable(m): self.sdkclient.start_listener_thread(exception_handler=m)
 		else: self.sdkclient.start_listener_thread()
 
+	def repl_me(self, txt):
+		""" Send an action/emote """
+		if not self.foreground_room:
+			print("Cannot send message: You have not selected any room. Try /help.")
+			return True
+
+		self.foreground_room.send_emote(txt[4:])
+		return True
+
 	def repl_list(self, txt):
 		""" List the rooms you're a member of """
 
