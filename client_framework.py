@@ -1,6 +1,8 @@
 # stdlib
 import json
 import getpass
+import re
+import itertools
 
 # external deps
 import matrix_client.client
@@ -75,6 +77,82 @@ class AccountInfo:
 		return bool(self.login_type())
 
 
+class RoomList:
+	RE_PREFIX = re.compile("^(#[^:]*)")
+
+	def __init__(self, roomsdict):
+		# 'roomsdict' should be a dictionary mapping room IDs to room objects,
+		# as returned by MatrixClient.get_rooms()
+
+		self.roomsbyid = roomsdict
+		self.roomsbyalias = {}
+		self.roomsbyprefix = {}	# Note: Can contain list for multiple matches
+
+		for r in roomsdict.values():
+			for alias in itertools.chain((r.canonical_alias,), r.aliases):
+				if alias is None: continue
+				self.roomsbyalias[alias] = r
+				m = self.RE_PREFIX.search(alias)
+				if not m: continue
+				prefix = m.group(1)
+				item = self.roomsbyprefix.get(prefix)
+				if item is None:
+					self.roomsbyprefix[prefix] = r
+				elif isinstance(item, list):
+					if r not in item: item.append(r)
+				elif item != r:
+					self.roomsbyprefix[prefix] = [item, r]
+
+		print("RoomList built:")
+		print("RoomList.roomsbyid:")
+		print(repr(self.roomsbyid))
+		print("RoomList.roomsbyalias:")
+		print(repr(self.roomsbyalias))
+		print("RoomList.roomsbyprefix:")
+		print(repr(self.roomsbyprefix))
+		print("-" * 79)
+
+	def get_room(self, id_or_alias_or_prefix):
+		# Find a room object by ID or alias, and return it
+
+		# We also happen to guarantee that if the result is
+		# not None, 'id_or_alias_or_prefix' _uniquely_ identifies the room.
+
+		if id_or_alias_or_prefix in self.roomsbyid:
+			return self.roomsbyid[id_or_alias_or_prefix]
+		if id_or_alias_or_prefix in self.roomsbyalias:
+			return self.roomsbyalias[id_or_alias_or_prefix]
+		if id_or_alias_or_prefix in self.roomsbyprefix:
+			x = self.roomsbyprefix[id_or_alias_or_prefix]
+			try:
+				# if it has a length, it's probably a list of rooms
+				if len(x) == 1: return x[0]
+				return None # Multiple matches is no match
+			except TypeError: # x doesn't _have_ a length
+				return x  # so probably a room object
+		return None
+
+	def get_room_handle(self, id_or_alias_or_prefix):
+		# get a convenient short display handle for the room
+		# always returns something useful, even if just unmodified id_or_alias_or_prefix
+		best_match = id_or_alias_or_prefix
+		room = self.get_room(id_or_alias_or_prefix)
+		if room is None: return best_match
+		for alias in itertools.chain((room.canonical_alias,), room.aliases):
+			if alias is None: continue
+			m = self.RE_PREFIX.search(alias)
+			if not m:
+				# This really should never happen, but.
+				if best_match == id_or_alias_or_prefix: best_match = alias
+				continue
+			prefix = m.group(1)
+			if self.get_room(prefix) is not None:
+				return prefix # prefix _uniquely_ identifies the room
+			return alias
+		if len(room.aliases) > 0: return room.aliases[0]
+		return best_match
+
+
 class NoSyncMatrixClient(matrix_client.client.MatrixClient):
 	# A subclass of MatrixClient that inhibits syncing until we allow it.
 
@@ -120,7 +198,27 @@ class MXClient:
 		# Connect all the listeners, start threads etc.
 		pass
 
+	def repl_open(self, txt):
+		""" Open a room you're already a member of """
+		try:
+			cmd, handle = txt.split(None, 1)
+		except ValueError:
+			print("Wrong number of arguments")
+			return True
+
+		room = self.rooms.get_room(handle)
+		if room is None:
+			print("You are not a member of that room. Did you want /join?")
+			return True
+
+		print("Opening room %s: %s" % (handle, room.display_name))
+		print("Topic:", room.topic)
+		self.foreground_room = room
+
+		return True
+
 	def repl_join(self, txt):
+		""" Join a room you're not already in """
 		try:
 			cmd, roomid = txt.split(None, 1)
 		except ValueError:
@@ -152,6 +250,7 @@ class MXClient:
 		# A simple console client loop that can be used as a basis for a client
 		# or as a bot manhole.
 
+		self.rooms = RoomList(self.sdkclient.get_rooms())
 		self.foreground_room = None
 
 		while True:
