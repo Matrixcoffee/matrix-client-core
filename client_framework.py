@@ -3,6 +3,8 @@ import json
 import getpass
 import re
 import itertools
+import sys
+import time
 
 # external deps
 import matrix_client.client
@@ -195,14 +197,36 @@ class MXClient:
 		return client
 
 	def on_global_timeline_event(self, event):
+		self.last_event = event
 		roomid = event['room_id']
 		roomhandle = self.rooms.get_room_handle(roomid)
 		roomprefix = "[{0}]".format(roomhandle)
 		sender = event['sender']
 		print(roomprefix, repr(event))
+		self._reset_exc_delay()
+
+	def _reset_exc_delay(self):
+		self.exception_delay = self.exception_delay_init
+
+	def _exc_delay(self):
+		ret = self.exception_delay
+		self.exception_delay *= 2
+		return ret
+
+	def on_exception(self, e):
+		print("Exception caught. Hanging in there.")
+		print("Last event received:")
+		print(repr(self.last_event))
+		print("Stack trace:")
+		sys.excepthook(type(e), e, e.__traceback__)
+		delay = self._exc_delay()
+		print("Waiting {0} seconds before trying again.".format(delay))
+		time.sleep(delay)
+		print("Let's go!")
 
 	def hook(self):
 		# Connect all the listeners, start threads etc.
+		self.last_event = None
 		m = getattr(self, 'on_global_timeline_event', None)
 		if callable(m): self.sdkclient.add_listener(m)
 		m = getattr(self, 'on_exception', None)
@@ -263,6 +287,8 @@ class MXClient:
 
 		self.rooms = RoomList(self.sdkclient.get_rooms())
 		self.foreground_room = None
+		self.exception_delay_init = 30
+		self.exception_delay = self.exception_delay_init
 
 		while True:
 			txt = input()
