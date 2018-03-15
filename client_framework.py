@@ -120,6 +120,18 @@ class MXClient:
 		# Connect all the listeners, start threads etc.
 		pass
 
+	def repl_join(self, txt):
+		try:
+			cmd, roomid = txt.split(None, 1)
+		except ValueError:
+			print("Wrong number of arguments")
+			return True
+
+		self.foreground_room = self.sdkclient.join_room(roomid)
+		print("Opening room %s: %s" % (roomid, self.foreground_room.display_name))
+		print("Topic:", self.foreground_room.topic)
+		return True
+
 	def repl_quit(self, txt):
 		""" Leave """
 		return False
