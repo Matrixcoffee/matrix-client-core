@@ -198,8 +198,38 @@ class MXClient:
 		roomid = event['room_id']
 		roomhandle = self.rooms.get_room_handle(roomid)
 		roomprefix = "[{0}]".format(roomhandle)
+
 		sender = event['sender']
-		print(roomprefix, repr(event))
+		rich_sender = sender
+		try:
+			rich_sender = "{} ({})".format(sender, event['content']['displayname'])
+		except KeyError:
+			try:
+				rich_sender = "{} ({})".format(sender, event['unsigned']['prev_content']['displayname'])
+			except KeyError:
+				pass
+
+		if event['type'] == "m.room.member":
+			if event['content']['membership'] == "join":
+				print(roomprefix, "{} joined".format(rich_sender))
+			elif event['content']['membership'] == "leave":
+				print(roomprefix, "{} left".format(rich_sender))
+			else:
+				print(roomprefix, repr(event))
+		elif event['type'] == "m.room.message":
+			if event['content']['msgtype'] == "m.text":
+				inmsg = event['content']['body']
+				print(roomprefix, "{}: {}".format(rich_sender, inmsg))
+			elif event['content']['msgtype'] == "m.emote":
+				print(roomprefix, " * {} {}".format(rich_sender, event['content']['body']))
+			else:
+				print(roomprefix, " ? {}:{}: {}".format(
+					rich_sender,
+					event['content']['msgtype'],
+					event['content'].get('body', "")))
+		else:
+			print(roomprefix, repr(event))
+
 		self._reset_exc_delay()
 
 	def _reset_exc_delay(self):
