@@ -357,7 +357,7 @@ class MXClient:
 			self.account.access_token = token
 			self.account.mxid = self.sdkclient.user_id
 			self.account.savetofile(self.accountfilename)
-		if t == self.account.T_TOKEN:
+		elif t == self.account.T_TOKEN:
 			self.sdkclient = self._make_sdkclient(
 				self.account.hs_client_api_url,
 				token=self.account.access_token,
