@@ -108,7 +108,6 @@ class RoomList:
 				elif item != r:
 					self.roomsbyprefix[prefix] = [item, r]
 
-
 	def get_room(self, id_or_alias_or_prefix):
 		# Find a room object by ID or alias, and return it
 
@@ -129,24 +128,32 @@ class RoomList:
 				return x  # so probably a room object
 		return None
 
+	@staticmethod
+	def _best_handle(*args):
+		# Return shortest argument which is not None (if any)
+		best_match = None
+		for a in args:
+			if a is None: continue
+			if best_match is None \
+			   or len(a) < len(best_match): best_match = a
+		return best_match
+
 	def get_room_handle(self, id_or_alias_or_prefix):
 		# get a convenient short display handle for the room
 		# always returns something useful, even if just unmodified id_or_alias_or_prefix
-		best_match = id_or_alias_or_prefix
+		best_match = None
 		room = self.get_room(id_or_alias_or_prefix)
-		if room is None: return best_match
+		if room is None: return id_or_alias_or_prefix
 		for alias in itertools.chain((room.canonical_alias,), room.aliases):
 			if alias is None: continue
+			best_match = self._best_handle(best_match, alias)
 			m = self.RE_PREFIX.search(alias)
-			if not m:
-				# This really should never happen, but.
-				if best_match == id_or_alias_or_prefix: best_match = alias
-				continue
+			if not m: continue # This really should never happen, but.
 			prefix = m.group(1)
 			if self.get_room(prefix) is not None:
-				return prefix # prefix _uniquely_ identifies the room
-			return alias
-		if len(room.aliases) > 0: return room.aliases[0]
+				# prefix _uniquely_ identifies the room
+				best_match = self._best_handle(best_match, prefix)
+		if best_match is None: return id_or_alias_or_prefix
 		return best_match
 
 
