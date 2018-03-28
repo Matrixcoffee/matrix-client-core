@@ -190,6 +190,8 @@ class MXClient:
 		self.sync_filter = sync_filter
 		self.initial_sync_timeout_seconds = 600
 		self.sync_timeout_seconds = 100
+		self.exception_delay_init = 45
+		self.exception_delay = self.exception_delay_init
 
 	def _make_sdkclient(self, *args, **kwargs):
 		if not self.sync_filter:
@@ -349,11 +351,6 @@ class MXClient:
 		# A simple console client loop that can be used as a basis for a client
 		# or as a bot manhole.
 
-		self.rooms = RoomList(self.sdkclient.get_rooms())
-		self.foreground_room = None
-		self.exception_delay_init = 30
-		self.exception_delay = self.exception_delay_init
-
 		while True:
 			txt = input()
 			if txt.startswith('/'):
@@ -401,6 +398,9 @@ class MXClient:
 				user_id=self.account.mxid)
 		else:
 			raise CFException("MXClient.login(): Cannot login: 'account' is (partially) uninitialized")
+
+		self.rooms = RoomList(self.sdkclient.get_rooms())
+		self.foreground_room = None
 
 	def _ensure_account(self):
 		account = self.account
