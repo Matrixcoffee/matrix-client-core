@@ -362,7 +362,7 @@ class MXClient:
 					if callable(m):
 						if not m(txt): break
 					else:
-						print("Unrecognized command:", cmd)
+						print("Unrecognized command: {!r}. Try /help.".format(cmd))
 					continue
 
 			if not self.foreground_room:
@@ -385,6 +385,7 @@ class MXClient:
 
 		self._ensure_account()
 		t = self.account.login_type()
+		print("Connecting to {} as {}".format(self.account.hs_client_api_url, self.account.mxid))
 		if t == self.account.T_PASSWORD:
 			self.sdkclient = self._make_sdkclient(self.account.hs_client_api_url)
 			token = self.sdkclient.login_with_password(self.account.mxid, self.account.password)
