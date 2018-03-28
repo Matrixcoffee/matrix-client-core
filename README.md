@@ -2,10 +2,21 @@
 UnRedactBot is a [Matrix](https://matrix.org) bot that listens for redaction events, and re-publishes the redacted content
 
 ## Why does it exist?
-This is mainly a toy, but it might come in handy if you really believe people
-shouldn't be allowed to redact their own messages. If you use it, please be
-responsible and let people know that content will be UnRedact-ed, e.g. by
-adding it to the room's topic.
+UnRedactBot is mainly a toy, but it has an important point to prove. This point
+is that redaction events stand out like a sore thumb at the protocol level,
+highlighting potentially interesting messages to malicious agents.
+
+UnRedactBot helps to demonstrate this by making redacted messages stand out
+like a sore thumb in regular clients as well. The fact that users respond
+negatively to UnRedactBot's operation seems to underscore the need for this
+message to be taught. UnRedactBot doesn't fabricate things out of thin air. It
+merely shows and highlights what's already there. Just because regular clients
+muffle redacted events away, doesn't mean they're really gone.
+
+Whatever your purpose in running UnRedactBot, if you use it in public, please
+be responsible and let people know that content will be UnRedact-ed, e.g. by
+adding it to the room's topic. UnRedactBot will also help let people know it's
+watching by posting its read receipt on every message it stores.
 
 ## Status
 **Alpha**. (It works. Probably fairly well. No rate-limiting though. And it
