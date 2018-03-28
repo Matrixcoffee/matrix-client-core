@@ -4,9 +4,10 @@
 import matrix_client
 
 # in-tree deps
-import client_framework
+import matrix_client_core as client_framework
 
-class UnRedactBot(client_framework.MXClient):
+
+class TestClient(client_framework.MXClient):
 	def on_room_message(self, event):
 		self.message_store[event['event_id']] = event
 		print("Message with ID {0} stored.".format(event['event_id']))
@@ -35,7 +36,7 @@ class UnRedactBot(client_framework.MXClient):
 				event['sender'],
 				redact_id))
 
-	def run(self):
+	def connect(self):
 		self.sync_filter = '''{
 			"presence": { "types": [ "" ] },
 			"room": {
@@ -55,20 +56,23 @@ class UnRedactBot(client_framework.MXClient):
 			}
 		}'''
 
-		self.is_bot = True
+		self.is_bot = False
 		self.message_store = {}
 
 		self.login()
 
-		self.sdkclient.add_listener(self.on_room_message, 'm.room.message')
-		self.sdkclient.add_listener(self.on_redact, 'm.room.redaction')
-
 		self.hook()
+
+	def run_forever(self):
 		print("Ready.")
 		self.repl()
 
 if __name__ == '__main__':
+	try: import site_config
+	except ImportError: pass
+
 	import logging
 	logging.basicConfig(level=logging.CRITICAL)
-	bot = UnRedactBot('account.json')
-	bot.run()
+	tc = TestClient('testclient-account.json')
+	tc.connect()
+	tc.run_forever()
