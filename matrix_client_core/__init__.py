@@ -7,6 +7,8 @@ import sys
 import time
 import io
 import traceback
+import queue
+import threading
 
 # external deps
 import matrix_client.client
@@ -192,6 +194,8 @@ class MXClient:
 		self.sync_timeout_seconds = 100
 		self.exception_delay_init = 45
 		self.exception_delay = self.exception_delay_init
+		self.sendq = queue.Queue()
+		self.sendcmd = None
 
 	def _make_sdkclient(self, *args, **kwargs):
 		if not self.sync_filter:
@@ -265,6 +269,24 @@ class MXClient:
 		print("Waiting {0} seconds before trying again.".format(delay))
 		time.sleep(delay)
 		print("Let's go!")
+
+	def sendmsg(self, room_id, msg):
+		self.sendq.put((room_id, msg))
+
+	def sendrunner(self):
+		while True:
+			try:
+				room_id, msg = self.sendq.get()
+				self.sendcmd(room_id, msg)
+			except queue.Empty:
+				print("Queue was empty")
+			time.sleep(self.send_sleep_time)
+
+	def start_send_thread(self, sendcmd):
+		self.sendcmd = sendcmd
+		t = threading.Thread(target=self.sendrunner)
+		t.daemon = True
+		t.start()
 
 	def hook(self):
 		# Connect all the listeners, start threads etc.
