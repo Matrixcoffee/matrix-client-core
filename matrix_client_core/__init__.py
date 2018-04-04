@@ -165,6 +165,11 @@ class NoSyncMatrixClient(matrix_client.client.MatrixClient):
 	# This class exists because we want to do some modifications to the
 	# object (fixup) before _sync() is called for the first time.
 
+	def __init__(self, *args, **kwargs):
+		sync_filter = kwargs.pop('sync_filter', None)
+		matrix_client.client.MatrixClient.__init__(self, *args, **kwargs)
+		if sync_filter: self.sync_filter = sync_filter
+
 	def _sync(self, *args, **kwargs):
 		self.sync_attempted = True
 		self.sync_args = args
@@ -196,15 +201,6 @@ class MXClient:
 		self.exception_delay = self.exception_delay_init
 		self.sendq = queue.Queue()
 		self.sendcmd = None
-
-	def _make_sdkclient(self, *args, **kwargs):
-		if not self.sync_filter:
-			return matrix_client.client.MatrixClient(*args, **kwargs)
-
-		client = NoSyncMatrixClient(*args, **kwargs)
-		client.sync_filter = self.sync_filter
-		client.finish_fixup()
-		return client
 
 	def on_global_timeline_event(self, event):
 		self.last_event = event
@@ -409,19 +405,21 @@ class MXClient:
 		t = self.account.login_type()
 		print("Connecting to {} as {}".format(self.account.hs_client_api_url, self.account.mxid))
 		if t == self.account.T_PASSWORD:
-			self.sdkclient = self._make_sdkclient(self.account.hs_client_api_url)
+			self.sdkclient = NoSyncMatrixClient(self.account.hs_client_api_url, sync_filter=self.sync_filter)
 			token = self.sdkclient.login_with_password(self.account.mxid, self.account.password)
 			self.account.access_token = token
 			self.account.mxid = self.sdkclient.user_id
 			self.account.savetofile(self.accountfilename)
 		elif t == self.account.T_TOKEN:
-			self.sdkclient = self._make_sdkclient(
+			self.sdkclient = NoSyncMatrixClient(
 				self.account.hs_client_api_url,
 				token=self.account.access_token,
-				user_id=self.account.mxid)
+				user_id=self.account.mxid,
+				sync_filter=self.sync_filter)
 		else:
 			raise CFException("MXClient.login(): Cannot login: 'account' is (partially) uninitialized")
 
+		self.sdkclient.finish_fixup()
 		self.rooms = RoomList(self.sdkclient.get_rooms())
 		self.foreground_room = None
 
