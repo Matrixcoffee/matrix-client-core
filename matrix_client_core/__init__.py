@@ -278,8 +278,9 @@ class MXClient:
 				print("Queue was empty")
 			time.sleep(self.send_sleep_time)
 
-	def start_send_thread(self, sendcmd):
+	def start_send_thread(self, sendcmd, send_sleep_time=5):
 		self.sendcmd = sendcmd
+		self.send_sleep_time = send_sleep_time
 		t = threading.Thread(target=self.sendrunner)
 		t.daemon = True
 		t.start()
