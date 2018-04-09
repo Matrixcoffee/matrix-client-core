@@ -418,7 +418,9 @@ class MXClient:
 				sync_filter=self.sync_filter)
 		else:
 			raise CFException("MXClient.login(): Cannot login: 'account' is (partially) uninitialized")
+		self.sdkclient.enable_sync()
 
+	def first_sync(self):
 		self.sdkclient.finish_fixup()
 		self.rooms = RoomList(self.sdkclient.get_rooms())
 		self.foreground_room = None

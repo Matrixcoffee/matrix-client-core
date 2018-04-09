@@ -31,6 +31,7 @@ class TestClient(client_framework.MXClient):
 		self.is_bot = False
 		self.message_store = {}
 		self.login()
+		self.first_sync()
 		self.hook()
 
 	def run_forever(self):
