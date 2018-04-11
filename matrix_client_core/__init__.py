@@ -14,6 +14,9 @@ import threading
 import matrix_client.client
 import requests
 
+# in-tree deps
+import matrix_client_core.notifier as notifier
+
 
 class CFException(Exception):
 	pass
@@ -267,12 +270,14 @@ class MXClient:
 		print("Let's go!")
 
 	def sendmsg(self, room_id, msg):
+		notifier.notify(__name__, 'mcc.mxc.sendmsg', msg)
 		self.sendq.put((room_id, msg))
 
 	def sendrunner(self):
 		while True:
 			try:
 				room_id, msg = self.sendq.get()
+				notifier.notify(__name__, 'mcc.mxc.sendrunner.sendcmd', msg)
 				self.sendcmd(room_id, msg)
 			except queue.Empty:
 				print("Queue was empty")
@@ -404,9 +409,10 @@ class MXClient:
 
 		self._ensure_account()
 		t = self.account.login_type()
-		print("Connecting to {} as {}".format(self.account.hs_client_api_url, self.account.mxid))
+		notifier.notify(__name__, 'mcc.mxc.login.connect', (self.account.hs_client_api_url, self.account.mxid))
 		if t == self.account.T_PASSWORD:
 			self.sdkclient = NoSyncMatrixClient(self.account.hs_client_api_url, sync_filter=self.sync_filter)
+			notifier.notify(__name__, 'mcc.mxc.login.login', (self.account.mxid))
 			token = self.sdkclient.login_with_password(self.account.mxid, self.account.password)
 			self.account.access_token = token
 			self.account.mxid = self.sdkclient.user_id
@@ -422,7 +428,9 @@ class MXClient:
 		self.sdkclient.enable_sync()
 
 	def first_sync(self):
+		notifier.notify(__name__, 'mcc.mxc.first_sync.sync')
 		self.sdkclient.finish_fixup()
+		notifier.notify(__name__, 'mcc.mxc.first_sync.sync_done')
 		self.rooms = RoomList(self.sdkclient.get_rooms())
 		self.foreground_room = None
 

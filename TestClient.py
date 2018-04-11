@@ -5,6 +5,7 @@ import matrix_client
 
 # in-tree deps
 import matrix_client_core as client_framework
+import matrix_client_core.notifier as notifier
 
 
 class TestClient(client_framework.MXClient):
@@ -44,6 +45,9 @@ if __name__ == '__main__':
 
 	import logging
 	logging.basicConfig(level=logging.CRITICAL)
+
+	nl = notifier.NotificationListener()
+
 	tc = TestClient('testclient-account.json')
 	tc.connect()
 	tc.run_forever()
