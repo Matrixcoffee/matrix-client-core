@@ -1,26 +1,23 @@
-# UnRedactBot
-UnRedactBot is a [Matrix](https://matrix.org) bot that listens for redaction events, and re-publishes the redacted content
+# Matrix Client Core
+[Matrix Client Core](https://github.com/Matrixcoffee/matrix-client-core) is a
+featureful base platform that you can build wafer-thin (<10LOC if you want)
+[Matrix](https://matrix.org) clients and/or bots on top of.
 
 ## Why does it exist?
-UnRedactBot is mainly a toy, but it has an important point to prove. This point
-is that redaction events stand out like a sore thumb at the protocol level,
-highlighting potentially interesting messages to malicious agents.
+It seems I like writing bots, and this core extracts nearly all of the things
+they have in common into a single package, so I don't have to keep copying and
+pasting all the same code to create a new bot. Also improvements made here will
+benefit all bots instantly, rather than different improvements living in
+different repositories, to be copypasta'd around to the other bots some day.
 
-UnRedactBot helps to demonstrate this by making redacted messages stand out
-like a sore thumb in regular clients as well. The fact that users respond
-negatively to UnRedactBot's operation seems to underscore the need for this
-message to be taught. UnRedactBot doesn't fabricate things out of thin air. It
-merely shows and highlights what's already there. Just because regular clients
-muffle redacted events away, doesn't mean they're really gone.
-
-Whatever your purpose in running UnRedactBot, if you use it in public, please
-be responsible and let people know that content will be UnRedact-ed, e.g. by
-adding it to the room's topic. UnRedactBot will also help let people know it's
-watching by posting its read receipt on every message it stores.
+Oh, by the way, if you thought this looked surprisingly similar to my
+[UnRedactBot](https://github.com/Matrixcoffee/UnRedactBot) project, you would
+be right.
 
 ## Status
-**Alpha**. (It works. Probably fairly well. No rate-limiting though. And it
-really hasn't seen enough testing to be anything but alpha.)
+**Alpha**. (It works. Probably fairly well. But hasn't seen enough testing to
+be higher than alpha, yet. It might still change in ways that break all things
+built on top of it.)
 
 ## Recommended Installation
 ```
@@ -28,16 +25,13 @@ $ cd $SOME_EMPTY_DIR
 $ git clone https://github.com/matrix-org/matrix-python-sdk.git
 $ git clone https://github.com/Matrixcoffee/urllib-requests-adapter.git
 $ wget -P urllib-requests-adapter https://github.com/Anorov/PySocks/raw/master/socks.py # (optional)
-$ git clone https://github.com/Matrixcoffee/UnRedactBot.git
+$ git clone https://github.com/Matrixcoffee/matrix-client-core.git
 ```
-Running it:
+Taking it for a spin:
 ```
-$ cd UnRedactBot
-$ /bin/sh unredactbot.sh
+$ cd matrix-client-core
+$ /bin/sh testclient.sh
 ```
-
-UnRedactBot does not know how to register an account, so you will need to
-create it by other means. [Riot.im](https://riot.im/app), for example.
 
 Happy hacking!
 
