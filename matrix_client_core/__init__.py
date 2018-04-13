@@ -2,6 +2,7 @@
 import functools
 import json
 import getpass
+import pprint
 import re
 import itertools
 import sys
@@ -222,6 +223,11 @@ class MXClient:
 		self.sendq = queue.Queue()
 		self.sendcmd = None
 
+	@staticmethod
+	def _prettyprint_raw_event(prefix, event):
+		print(prefix, end=' ')
+		pprint.pprint(event)
+
 	@wrap_exception
 	def on_global_timeline_event(self, event):
 		self.last_event = event
@@ -245,7 +251,7 @@ class MXClient:
 			elif event['content']['membership'] == "leave":
 				print(roomprefix, "{} left".format(rich_sender))
 			else:
-				print(roomprefix, repr(event))
+				self._prettyprint_raw_event(roomprefix, event)
 		elif event['type'] == "m.room.message":
 			if event['content']['msgtype'] == "m.text":
 				inmsg = event['content']['body']
@@ -258,7 +264,7 @@ class MXClient:
 					event['content']['msgtype'],
 					event['content'].get('body', "")))
 		else:
-			print(roomprefix, repr(event))
+			self._prettyprint_raw_event(roomprefix, event)
 
 		self._reset_exc_delay()
 
@@ -275,7 +281,7 @@ class MXClient:
 		print("Type /debug to show more info.")
 		moreinfo = io.StringIO()
 		print("Last event received before exception:", file=moreinfo)
-		print(repr(self.last_event), file=moreinfo)
+		pprint.pprint(self.last_event, moreinfo)
 		print("Stack trace:", file=moreinfo)
 
 		traceback.print_exception(type(e), e, e.__traceback__, file=moreinfo)
