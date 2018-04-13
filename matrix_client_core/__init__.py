@@ -1,4 +1,5 @@
 # stdlib
+import functools
 import json
 import getpass
 import re
@@ -16,6 +17,22 @@ import requests
 
 # in-tree deps
 import matrix_client_core.notifier as notifier
+
+
+def wrap_exception(func):
+	""" Decorator that calls self.on_exception(e).
+
+	If an instance method throws an exception, this decorator will catch it
+	and pass it to the on_exception method on the same instance. """
+
+	@functools.wraps(func)
+	def wrapper(self, *args, **kwargs):
+		try:
+			return func(self, *args, **kwargs)
+		except Exception as e:
+			self.on_exception(e)
+
+	return wrapper
 
 
 class CFException(Exception):
@@ -205,6 +222,7 @@ class MXClient:
 		self.sendq = queue.Queue()
 		self.sendcmd = None
 
+	@wrap_exception
 	def on_global_timeline_event(self, event):
 		self.last_event = event
 		roomid = event['room_id']
