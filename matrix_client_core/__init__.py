@@ -369,39 +369,56 @@ class MXClient:
 
 		return True
 
-	def repl(self):
+	def repl(self, exception_handler=True):
 		# Read Eval Print Loop
 
 		# A simple console client loop that can be used as a basis for a client
 		# or as a bot manhole.
 
+		if exception_handler is True:
+			exception_handler = self.on_exception
+
 		while True:
-			txt = input()
-			if txt.startswith('/'):
-				if txt.startswith('//'):
-					txt = txt[1:]
-				else:
-					cmd = txt.split(None, 1)[0].lstrip('/')
-					m = getattr(self, 'repl_' + cmd, None)
-					if callable(m):
-						if not m(txt): break
-					else:
-						print("Unrecognized command: {!r}. Try /help.".format(cmd))
-					continue
+			try:
+				if not self._repl_inner(): break
+			except Exception as e:
+				if exception_handler is None: raise
+				exception_handler(e)
 
-			if not self.foreground_room:
-				print("Cannot send message: You have not selected any room. Try /help.")
-				continue
+	def _repl_inner(self):
+		""" Run a single REPL iteration.
 
-			send_as_notice = getattr(self, 'is_bot', False)
-			if txt.startswith(' '):
+		Returns True if there should be another iteration, False if it
+		wants to exit normally. """
+
+		txt = input()
+		if txt.startswith('/'):
+			if txt.startswith('//'):
 				txt = txt[1:]
-				send_as_notice = not send_as_notice
-
-			if send_as_notice:
-				self.foreground_room.send_notice(txt)
 			else:
-				self.foreground_room.send_text(txt)
+				cmd = txt.split(None, 1)[0].lstrip('/')
+				m = getattr(self, 'repl_' + cmd, None)
+				if callable(m):
+					if not m(txt): return False
+				else:
+					print("Unrecognized command: {!r}. Try /help.".format(cmd))
+				return True
+
+		if not self.foreground_room:
+			print("Cannot send message: You have not selected any room. Try /help.")
+			return True
+
+		send_as_notice = getattr(self, 'is_bot', False)
+		if txt.startswith(' '):
+			txt = txt[1:]
+			send_as_notice = not send_as_notice
+
+		if send_as_notice:
+			self.foreground_room.send_notice(txt)
+		else:
+			self.foreground_room.send_text(txt)
+
+		return True
 
 	def login(self):
 		# Only supported by urllib-requests-adapter. NOOP otherwise.
