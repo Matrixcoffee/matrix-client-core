@@ -1,4 +1,5 @@
 # stdlib
+import difflib
 import functools
 import json
 import getpass
@@ -228,6 +229,39 @@ class MXClient:
 		print(prefix, end=' ')
 		pprint.pprint(event)
 
+	def _print_diff(self, prefix, event):
+		self._print_diff_root(prefix, event)
+		self._print_diff_unsigned(prefix, event)
+		self._print_diff_checkunsigned(prefix, event)
+
+	def _print_diff_root(self, prefix, event):
+		try:
+			a, b = event['prev_content'], event['content']
+		except KeyError:
+			return
+		self._print_actual_diff(prefix + " Diff root/content:", a, b)
+
+	def _print_diff_unsigned(self, prefix, event):
+		try:
+			a, b = event['unsigned']['prev_content'], event['content']
+		except KeyError:
+			return
+		self._print_actual_diff(prefix + " Diff unsigned/content:", a, b)
+
+	def _print_diff_checkunsigned(self, prefix, event):
+		try:
+			a, b = event['prev_content'], event['unsigned']['prev_content']
+		except KeyError:
+			return
+		self._print_actual_diff(prefix + " Diff root/unsigned(!):", a, b)
+
+	@staticmethod
+	def _print_actual_diff(prefix, a, b):
+		ppa = (pprint.pformat(a) + "\n").splitlines(True)
+		ppb = (pprint.pformat(b) + "\n").splitlines(True)
+		print(prefix)
+		print("".join(difflib.ndiff(ppa, ppb)), end='')
+
 	@wrap_exception
 	def on_m_room_aliases(self, event):
 		self.last_event = event
@@ -273,6 +307,8 @@ class MXClient:
 					event['content'].get('body', "")))
 		else:
 			self._prettyprint_raw_event(roomprefix, event)
+
+		self._print_diff(roomprefix, event)
 
 		self._reset_exc_delay()
 
