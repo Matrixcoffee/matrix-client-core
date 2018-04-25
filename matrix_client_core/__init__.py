@@ -223,6 +223,14 @@ class MXClient:
 		self.sendcmd = None
 
 	@wrap_exception
+	def on_m_room_aliases(self, event):
+		self.last_event = event
+		if 'state_key' not in event: return # not a state event!
+		self.rooms = RoomList(self.sdkclient.get_rooms())
+
+	on_m_room_canonical_alias = on_m_room_aliases
+
+	@wrap_exception
 	def on_global_timeline_event(self, event):
 		self.last_event = event
 		roomid = event['room_id']
@@ -313,6 +321,10 @@ class MXClient:
 		self.last_event = None
 		m = getattr(self, 'on_global_timeline_event', None)
 		if callable(m): self.sdkclient.add_listener(m)
+		m = getattr(self, 'on_m_room_canonical_alias', None)
+		if callable(m): self.sdkclient.add_listener(m, 'm.room.canonical_alias')
+		m = getattr(self, 'on_m_room_aliases', None)
+		if callable(m): self.sdkclient.add_listener(m, 'm.room.aliases')
 		m = getattr(self, 'on_exception', None)
 		if callable(m): self.sdkclient.start_listener_thread(exception_handler=m)
 		else: self.sdkclient.start_listener_thread()
