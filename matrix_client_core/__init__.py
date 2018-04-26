@@ -425,6 +425,29 @@ class MXClient:
 		print("Topic:", self.foreground_room.topic)
 		return True
 
+	def repl_ops(self, txt):
+		""" Show priviledged users """
+		roomhandle = self.foreground_room
+		try:
+			if txt != "/ops": cmd, roomhandle = txt.split(None, 1)
+		except ValueError:
+			print("Too many arguments")
+			return True
+
+		if not roomhandle:
+			print("Not in a room, and no room specified.")
+			return True
+
+		room = self.rooms.get_room(roomhandle)
+		if room is None:
+			print("You are not a member of that room.")
+			return True
+
+		ops = self.sdkclient.api.get_power_levels(room.room_id)
+		pprint.pprint(ops)
+
+		return True
+
 	def repl_quit(self, txt):
 		""" Leave """
 		return False
